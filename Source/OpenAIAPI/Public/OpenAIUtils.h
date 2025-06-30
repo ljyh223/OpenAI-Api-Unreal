@@ -64,4 +64,7 @@ public:
 
 	UFUNCTION(BlueprintCallable, Category = "OpenAI")
 	static float HDVectorCosineSimilarity(const FHighDimensionalVector& A, const FHighDimensionalVector& B);
+
+	UFUNCTION(BlueprintCallable, Category = "OpenAI")
+	static FString getApiHost();
 };

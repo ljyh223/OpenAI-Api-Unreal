@@ -102,3 +102,10 @@ float UOpenAIUtils::HDVectorCosineSimilarity(const FHighDimensionalVector& A, co
 	float LengthProduct = HDVectorLength(A) * HDVectorLength(B);
 	return DotProductValue / LengthProduct;
 }
+
+// 获取配置中的Host，若未实现则返回空字符串
+FString UOpenAIUtils::getApiHost()
+{
+	// 你可以根据实际需求从配置文件、项目设置等读取Host，这里默认返回空
+	return TEXT("");
+}
