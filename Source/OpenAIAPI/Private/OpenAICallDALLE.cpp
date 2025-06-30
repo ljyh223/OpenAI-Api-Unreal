@@ -18,12 +18,13 @@ UOpenAICallDALLE::~UOpenAICallDALLE()
 {
 }
 
-UOpenAICallDALLE* UOpenAICallDALLE::OpenAICallDALLE(EOAImageSize imageSizeInput, FString promptInput, int32 numImagesInput)
+UOpenAICallDALLE* UOpenAICallDALLE::OpenAICallDALLE(EOAImageSize imageSizeInput, FString promptInput, int32 numImagesInput, FString HostInput)
 {
 	UOpenAICallDALLE* BPNode = NewObject<UOpenAICallDALLE>();
 	BPNode->imageSize = imageSizeInput;
 	BPNode->prompt = promptInput;
 	BPNode->numImages = numImagesInput;
+	BPNode->Host = HostInput;
 	return BPNode;
 }
 
@@ -69,7 +70,8 @@ void UOpenAICallDALLE::Activate()
 	tempHeader += _apiKey;
 
 	// set headers
-	FString url = FString::Printf(TEXT("https://api.openai.com/v1/images/generations"));
+	FString url = Host.EndsWith("/") ? Host.LeftChop(1) : Host;
+	url += TEXT("/v1/images/generations");
 	HttpRequest->SetURL(url);
 	HttpRequest->SetHeader(TEXT("Content-Type"), TEXT("application/json"));
 	HttpRequest->SetHeader(TEXT("Authorization"), tempHeader);

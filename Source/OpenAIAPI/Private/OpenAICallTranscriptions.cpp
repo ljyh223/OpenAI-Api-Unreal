@@ -19,10 +19,11 @@ UOpenAICallTranscriptions::~UOpenAICallTranscriptions()
 {
 }
 
-UOpenAICallTranscriptions* UOpenAICallTranscriptions::OpenAICallTranscriptions(FString fileName)
+UOpenAICallTranscriptions* UOpenAICallTranscriptions::OpenAICallTranscriptions(FString fileName, FString HostInput)
 {
 	UOpenAICallTranscriptions* BPNode = NewObject<UOpenAICallTranscriptions>();
 	BPNode->fileName = fileName + ".wav";
+	BPNode->Host = HostInput;
 	return BPNode;
 }
 
@@ -33,36 +34,29 @@ void UOpenAICallTranscriptions::Activate()
 		_apiKey = UOpenAIUtils::GetEnvironmentVariable(TEXT("OPENAI_API_KEY"));
 	else
 		_apiKey = UOpenAIUtils::getApiKey();
-	
 	// checking parameters are valid
 	if (_apiKey.IsEmpty())
 	{
 		Finished.Broadcast({}, TEXT("Api key is not set"), false);
 	}
-	
 	// get the absolutePath to the wav file
 	FString relativePath = FPaths::ConvertRelativePathToFull(FPaths::ProjectSavedDir() + "BouncedWavFiles/" + fileName);
 	FString absolutePath = FPaths::ConvertRelativePathToFull(relativePath);
-	
 	FString tempHeader = "Bearer ";
 	tempHeader += _apiKey;
-	
 	// Create the HTTP request
 	TSharedRef<IHttpRequest, ESPMode::ThreadSafe> HttpRequest = FHttpModule::Get().CreateRequest();
-
 	// Set the request method, URL, and headers
-
-	HttpRequest->SetURL("https://api.openai.com/v1/audio/transcriptions");
+	FString url = Host.EndsWith("/") ? Host.LeftChop(1) : Host;
+	url += TEXT("/v1/audio/transcriptions");
+	HttpRequest->SetURL(url);
 	HttpRequest->SetVerb("POST");
-	
 	// Set the content type, boundary, and form data
 	HttpRequest->SetHeader("Authorization", tempHeader);
 	HttpRequest->SetHeader("Content-Type", "multipart/form-data; boundary=boundary");
 	HttpRequest->SetHeader("model", "whisper-1");
-	
 	TArray<uint8> UpFileRawData;
 	FFileHelper::LoadFileToArray(UpFileRawData, *absolutePath);
-	
 	FString boundaryStart = "\r\n--boundary\r\n";
 	FString contentDispositionFile = FString::Printf(TEXT("Content-Disposition: form-data; name=\"file\"; filename=\"%s\"\r\n"), *fileName);
 	FString contentType = "Content-Type: audio/wav\r\n\r\n";
@@ -70,7 +64,6 @@ void UOpenAICallTranscriptions::Activate()
 	FString contentDisposition = "Content-Disposition: form-data; name=\"model\"\r\n\r\n";
 	FString transcriptionModel = "whisper-1";
 	FString boundaryEnd = "\r\n--boundary--\r\n";
-
 	TArray<uint8> data;
 	data.Append((uint8*)TCHAR_TO_UTF8(*boundaryStart), boundaryStart.Len());
 	data.Append((uint8*)TCHAR_TO_UTF8(*contentDispositionFile), contentDispositionFile.Len());
@@ -80,11 +73,8 @@ void UOpenAICallTranscriptions::Activate()
 	data.Append((uint8*)TCHAR_TO_UTF8(*contentDisposition), contentDisposition.Len());
 	data.Append((uint8*)TCHAR_TO_UTF8(*transcriptionModel), transcriptionModel.Len());
 	data.Append((uint8*)TCHAR_TO_UTF8(*boundaryEnd), boundaryEnd.Len());
-
 	HttpRequest->SetContent(data); 
-
 	HttpRequest->OnProcessRequestComplete().BindUObject(this, &UOpenAICallTranscriptions::OnResponse);
-	
 	HttpRequest->ProcessRequest();
 }
 

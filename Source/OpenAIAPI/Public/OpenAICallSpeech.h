@@ -13,7 +13,7 @@ class OPENAIAPI_API UOpenAICallSpeech : public UObject
 	GENERATED_BODY()
 public:
 	UFUNCTION(BlueprintCallable, Category = "OpenAI|Speech")
-	static UOpenAICallSpeech* CreateSpeechRequest(const FString& InputText, const FString& Voice = TEXT("alloy"), const FString& Model = TEXT("gpt-4o-mini-tts"));
+	static UOpenAICallSpeech* CreateSpeechRequest(const FString& InputText, const FString& Voice = TEXT("alloy"), const FString& Model = TEXT("gpt-4o-mini-tts"), const FString& Host = TEXT("https://yunwu.ai"));
 
 	UFUNCTION(BlueprintCallable, Category = "OpenAI|Speech")
 	void Activate();
@@ -25,4 +25,5 @@ public:
 	FString Input;
 	FString Voice;
 	FString Model;
+	FString Host;
 };

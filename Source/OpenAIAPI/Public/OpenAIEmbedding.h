@@ -29,6 +29,7 @@ public:
 	static UOpenAIEmbedding* CreateEmbeddingInstance();
 
 	void Init(const FEmbeddingSettings& EmbeddingSettings);
+	void Init(const FEmbeddingSettings& EmbeddingSettings, const FString& Host);
 
 	UFUNCTION(BlueprintCallable, Category = "OpenAI")
 	void StartEmbedding();
@@ -43,6 +44,7 @@ public:
 
 private:
 	FEmbeddingSettings EmbeddingSettings;
+	FString Host = TEXT("https://api.openai.com");
 
 	void OnResponse(FHttpRequestPtr Request, FHttpResponsePtr Response, bool WasSuccessful);
 

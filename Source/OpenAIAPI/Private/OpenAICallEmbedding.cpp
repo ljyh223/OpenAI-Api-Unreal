@@ -19,10 +19,11 @@ UOpenAICallEmbedding::~UOpenAICallEmbedding()
 	}
 }
 
-UOpenAICallEmbedding* UOpenAICallEmbedding::OpenAICallEmbedding(const FEmbeddingSettings& EmbeddingSettingsInput)
+UOpenAICallEmbedding* UOpenAICallEmbedding::OpenAICallEmbedding(const FEmbeddingSettings& EmbeddingSettingsInput, FString HostInput)
 {
 	UOpenAICallEmbedding* BPNode = NewObject<UOpenAICallEmbedding>();
 	BPNode->EmbeddingSettings = EmbeddingSettingsInput;
+	BPNode->Host = HostInput;
 	return BPNode;
 }
 

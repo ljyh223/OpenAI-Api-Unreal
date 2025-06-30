@@ -16,10 +16,11 @@ UOpenAICallChat::~UOpenAICallChat()
 {
 }
 
-UOpenAICallChat* UOpenAICallChat::OpenAICallChat(FChatSettings chatSettingsInput)
+UOpenAICallChat* UOpenAICallChat::OpenAICallChat(FChatSettings chatSettingsInput, FString HostInput)
 {
 	UOpenAICallChat* BPNode = NewObject<UOpenAICallChat>();
 	BPNode->chatSettings = chatSettingsInput;
+	BPNode->Host = HostInput;
 	return BPNode;
 }
 
@@ -30,16 +31,14 @@ void UOpenAICallChat::Activate()
 		_apiKey = UOpenAIUtils::GetEnvironmentVariable(TEXT("OPENAI_API_KEY"));
 	else
 		_apiKey = UOpenAIUtils::getApiKey();
-	
 	// checking parameters are valid
 	if (_apiKey.IsEmpty())
 	{
 		Finished.Broadcast({}, TEXT("Api key is not set"), false);
-	}	else
+	}
+	else
 	{
-	
 		auto HttpRequest = FHttpModule::Get().CreateRequest();
-
 		FString apiMethod;
 		switch (chatSettings.model)
 		{
@@ -52,30 +51,20 @@ void UOpenAICallChat::Activate()
 		case EOAChatEngineType::GPT_4_32k:
 			apiMethod = "gpt-4-32k";
 			break;
-			case EOAChatEngineType::GPT_4_TURBO:
-				apiMethod = "gpt-4-0125-preview";
+		case EOAChatEngineType::GPT_4_TURBO:
+			apiMethod = "gpt-4-0125-preview";
 			break;
 		}
-		
-		//TODO: add aditional params to match the ones listed in the curl response in: https://platform.openai.com/docs/api-reference/making-requests
-	
-		// convert parameters to strings
 		FString tempHeader = "Bearer ";
 		tempHeader += _apiKey;
-
-		// set headers
-		FString url = FString::Printf(TEXT("https://api.openai.com/v1/chat/completions"));
+		FString url = Host.EndsWith("/") ? Host.LeftChop(1) : Host;
+		url += TEXT("/v1/chat/completions");
 		HttpRequest->SetURL(url);
 		HttpRequest->SetHeader(TEXT("Content-Type"), TEXT("application/json"));
 		HttpRequest->SetHeader(TEXT("Authorization"), tempHeader);
-
-		//build payload
 		TSharedPtr<FJsonObject> _payloadObject = MakeShareable(new FJsonObject());
 		_payloadObject->SetStringField(TEXT("model"), apiMethod);
 		_payloadObject->SetNumberField(TEXT("max_tokens"), chatSettings.maxTokens);
-
-		
-		// convert role enum to model string
 		if (!(chatSettings.messages.Num() == 0))
 		{
 			TArray<TSharedPtr<FJsonValue>> Messages;
@@ -101,16 +90,11 @@ void UOpenAICallChat::Activate()
 			}
 			_payloadObject->SetArrayField(TEXT("messages"), Messages);
 		}
-
-		// convert payload to string
 		FString _payload;
 		TSharedRef<TJsonWriter<>> Writer = TJsonWriterFactory<>::Create(&_payload);
 		FJsonSerializer::Serialize(_payloadObject.ToSharedRef(), Writer);
-
-		// commit request
 		HttpRequest->SetVerb(TEXT("POST"));
 		HttpRequest->SetContentAsString(_payload);
-
 		if (HttpRequest->ProcessRequest())
 		{
 			HttpRequest->OnProcessRequestComplete().BindUObject(this, &UOpenAICallChat::OnResponse);

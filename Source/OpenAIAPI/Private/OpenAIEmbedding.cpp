@@ -33,6 +33,12 @@ void UOpenAIEmbedding::Init(const FEmbeddingSettings& Settings)
     EmbeddingSettings = Settings;
 }
 
+void UOpenAIEmbedding::Init(const FEmbeddingSettings& Settings, const FString& InHost)
+{
+    EmbeddingSettings = Settings;
+    Host = InHost;
+}
+
 void UOpenAIEmbedding::StartEmbedding()
 {
     UE_LOG(LogEmbedding, Log, TEXT("UOpenAIEmbedding StartEmbedding"));
@@ -65,44 +71,28 @@ void UOpenAIEmbedding::StartEmbedding()
 			apiMethod = "text-embedding-ada";
 			break;
 		}
-		// TODO: Add additional params to match the ones listed in the curl response in: https://platform.openai.com/docs/api-reference/making-requests
-		
-		// convert parameters to strings
 		FString tempHeader = "Bearer ";
 		tempHeader += _apiKey;
-
-		// set headers
-		FString url = FString::Printf(TEXT("https://api.openai.com/v1/embeddings"));
+		FString url = Host.EndsWith("/") ? Host.LeftChop(1) : Host;
+		url += TEXT("/v1/embeddings");
 		HttpRequest->SetURL(url);
 		HttpRequest->SetHeader(TEXT("Content-Type"), TEXT("application/json"));
 		HttpRequest->SetHeader(TEXT("Authorization"), tempHeader);
-
-		// build payload
 		TSharedPtr<FJsonObject> _payloadObject = MakeShareable(new FJsonObject());
 		_payloadObject->SetStringField(TEXT("model"), apiMethod);
 		_payloadObject->SetStringField(TEXT("input"),
 			EmbeddingSettings.input.Replace(TEXT("\n"), TEXT(" ")));
-
-		// convert payload to string
 		FString _payload;
 		TSharedRef<TJsonWriter<>> Writer = TJsonWriterFactory<>::Create(&_payload);
 		FJsonSerializer::Serialize(_payloadObject.ToSharedRef(), Writer);
-
-		// commit request
 		HttpRequest->SetVerb(TEXT("POST"));
 		HttpRequest->SetContentAsString(_payload);
-
 		UE_LOG(LogEmbedding, Log, TEXT("UOpenAIEmbedding ProcessHttpRequest"));
-
-		// ensure fast connection, I will retry it
 		HttpRequest->SetTimeout(10.f);
-		
 		HttpRequest->OnRequestProgress().BindUObject(this, &UOpenAIEmbedding::HandleRequestProgress);
 		HttpRequest->OnProcessRequestComplete().BindUObject(this, &UOpenAIEmbedding::OnResponse);
 		UE_LOG(LogEmbedding, Log, TEXT("UOpenAIEmbedding BindProcessRequestComplete"));
-
 		CurrentRequest = HttpRequest;
-		
 		if (HttpRequest->ProcessRequest())
 		{
 			UE_LOG(LogEmbedding, Log, TEXT("UOpenAIEmbedding StartProcessRequest"));

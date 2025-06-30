@@ -5,12 +5,13 @@
 #include "Interfaces/IHttpResponse.h"
 #include "Json.h"
 
-UOpenAICallSpeech* UOpenAICallSpeech::CreateSpeechRequest(const FString& InputText, const FString& Voice, const FString& Model)
+UOpenAICallSpeech* UOpenAICallSpeech::CreateSpeechRequest(const FString& InputText, const FString& Voice, const FString& Model, const FString& Host)
 {
 	UOpenAICallSpeech* Call = NewObject<UOpenAICallSpeech>();
 	Call->Input = InputText;
 	Call->Voice = Voice;
 	Call->Model = Model;
+	Call->Host = Host;
 	return Call;
 }
 
@@ -26,7 +27,9 @@ void UOpenAICallSpeech::Activate()
 	FJsonSerializer::Serialize(JsonObject.ToSharedRef(), Writer);
 
 	TSharedRef<IHttpRequest, ESPMode::ThreadSafe> HttpRequest = FHttpModule::Get().CreateRequest();
-	HttpRequest->SetURL(TEXT("https://yunwu.ai/v1/audio/speech"));
+	FString Url = Host.EndsWith("/") ? Host.LeftChop(1) : Host;
+	Url += TEXT("/v1/audio/speech");
+	HttpRequest->SetURL(Url);
 	HttpRequest->SetVerb(TEXT("POST"));
 	HttpRequest->SetHeader(TEXT("Content-Type"), TEXT("application/json"));
 	HttpRequest->SetContentAsString(OutputString);

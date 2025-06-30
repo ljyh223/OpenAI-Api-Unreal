@@ -18,12 +18,13 @@ UOpenAICallCompletions::~UOpenAICallCompletions()
 {
 }
 
-UOpenAICallCompletions* UOpenAICallCompletions::OpenAICallCompletions(EOACompletionsEngineType engineInput, FString promptInput, FCompletionSettings settingsInput)
+UOpenAICallCompletions* UOpenAICallCompletions::OpenAICallCompletions(EOACompletionsEngineType engineInput, FString promptInput, FCompletionSettings settingsInput, FString HostInput)
 {
 	UOpenAICallCompletions* BPNode = NewObject<UOpenAICallCompletions>();
 	BPNode->engine = engineInput;
 	BPNode->prompt = promptInput;
 	BPNode->settings = settingsInput;
+	BPNode->Host = HostInput;
 	return BPNode;
 }
 
@@ -34,7 +35,6 @@ void UOpenAICallCompletions::Activate()
 		_apiKey = UOpenAIUtils::GetEnvironmentVariable(TEXT("OPENAI_API_KEY"));
 	else
 		_apiKey = UOpenAIUtils::getApiKey();
-
 
 	// checking parameters are valid
 	if (_apiKey.IsEmpty())
@@ -97,7 +97,8 @@ void UOpenAICallCompletions::Activate()
 	tempHeader += _apiKey;
 
 	// set headers
-	FString url = FString::Printf(TEXT("https://api.openai.com/v1/engines/%s/completions"), *apiMethod);
+	FString url = Host.EndsWith("/") ? Host.LeftChop(1) : Host;
+	url += FString::Printf(TEXT("/v1/engines/%s/completions"), *apiMethod);
 	HttpRequest->SetURL(url);
 	HttpRequest->SetHeader(TEXT("Content-Type"), TEXT("application/json"));
 	HttpRequest->SetHeader(TEXT("Authorization"), tempHeader);

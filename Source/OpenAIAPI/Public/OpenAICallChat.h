@@ -23,14 +23,14 @@ public:
 	~UOpenAICallChat();
 
 	FChatSettings chatSettings;
+	FString Host = TEXT("https://api.openai.com");
 
 	UPROPERTY(BlueprintAssignable, Category = "OpenAI")
 	FOnResponseRecievedPin Finished;
 
 private:
-
 	UFUNCTION(BlueprintCallable, meta = (BlueprintInternalUseOnly = "true"), Category = "OpenAI")
-		static UOpenAICallChat* OpenAICallChat(FChatSettings chatSettings);
+	static UOpenAICallChat* OpenAICallChat(FChatSettings chatSettings, FString Host = TEXT("https://api.openai.com"));
 
 	virtual void Activate() override;
 	void OnResponse(FHttpRequestPtr Request, FHttpResponsePtr Response, bool WasSuccessful);

@@ -25,6 +25,7 @@ public:
     ~UOpenAICallEmbedding();
 
     FEmbeddingSettings EmbeddingSettings; // This should be of type appropriate for embedding settings
+    FString Host = TEXT("https://api.openai.com");
 
     UPROPERTY(BlueprintAssignable, Category = "OpenAI")
     FOnEmbeddingResponseReceived Finished;
@@ -34,7 +35,7 @@ private:
     UOpenAIEmbedding* OpenAIEmbeddingInstance;
 
     UFUNCTION(BlueprintCallable, meta = (BlueprintInternalUseOnly = "true"), Category = "OpenAI")
-    static UOpenAICallEmbedding* OpenAICallEmbedding(const FEmbeddingSettings& EmbeddingSettings); // This should use the correct type for embedding settings
+    static UOpenAICallEmbedding* OpenAICallEmbedding(const FEmbeddingSettings& EmbeddingSettings, FString Host = TEXT("https://api.openai.com"));
 
     virtual void Activate() override;
 
