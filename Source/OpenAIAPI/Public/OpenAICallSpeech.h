@@ -10,21 +10,6 @@
 
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_ThreeParams(FOnSpeechResponseReceivedPin, const FSpeechCompletion&, Speech, const FString&, errorMessage, bool, Success);
 
-USTRUCT(BlueprintType)
-struct FSpeechSettings
-{
-	GENERATED_BODY()
-
-	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = "OpenAI")
-	FString input;
-
-	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = "OpenAI")
-	FString model = "gpt-4o-mini-tts";
-
-	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = "OpenAI")
-	FString voice = "alloy";
-};
-
 UCLASS()
 class OPENAIAPI_API UOpenAICallSpeech : public UBlueprintAsyncActionBase
 {
@@ -34,7 +19,6 @@ public:
 	UOpenAICallSpeech();
 	~UOpenAICallSpeech();
 
-	FSpeechSettings speechSettings;
 	FString Host = TEXT("https://yunwu.ai");
 
 	UPROPERTY(BlueprintAssignable, Category = "OpenAI")
