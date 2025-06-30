@@ -1,29 +1,49 @@
-// OpenAICallSpeech.h
-// 文字转语音API接口声明
+// Copyright Kellan Mythen 2023. All rights Reserved.
+
 #pragma once
+
 #include "CoreMinimal.h"
-#include "UObject/ObjectMacros.h"
+#include "Kismet/BlueprintAsyncActionBase.h"
+#include "OpenAIDefinitions.h"
+#include "HttpModule.h"
 #include "OpenAICallSpeech.generated.h"
 
-DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FOnSpeechSynthesisCompleted, bool, bSuccess, const FString&, AudioUrlOrError);
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_ThreeParams(FOnSpeechResponseReceivedPin, const FSpeechCompletion&, Speech, const FString&, errorMessage, bool, Success);
 
-UCLASS(BlueprintType)
-class OPENAIAPI_API UOpenAICallSpeech : public UObject
+USTRUCT(BlueprintType)
+struct FSpeechSettings
 {
 	GENERATED_BODY()
+
+	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = "OpenAI")
+	FString input;
+
+	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = "OpenAI")
+	FString model = "gpt-4o-mini-tts";
+
+	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = "OpenAI")
+	FString voice = "alloy";
+};
+
+UCLASS()
+class OPENAIAPI_API UOpenAICallSpeech : public UBlueprintAsyncActionBase
+{
+	GENERATED_BODY()
+
 public:
-	UFUNCTION(BlueprintCallable, Category = "OpenAI|Speech")
-	static UOpenAICallSpeech* CreateSpeechRequest(const FString& InputText, const FString& Voice = TEXT("alloy"), const FString& Model = TEXT("gpt-4o-mini-tts"), const FString& Host = TEXT("https://yunwu.ai"));
+	UOpenAICallSpeech();
+	~UOpenAICallSpeech();
 
-	UFUNCTION(BlueprintCallable, Category = "OpenAI|Speech")
-	void Activate();
+	FSpeechSettings speechSettings;
+	FString Host = TEXT("https://yunwu.ai");
 
-	UPROPERTY(BlueprintAssignable)
-	FOnSpeechSynthesisCompleted OnSpeechSynthesisCompleted;
+	UPROPERTY(BlueprintAssignable, Category = "OpenAI")
+	FOnSpeechResponseReceivedPin Finished;
 
-	// 请求参数
-	FString Input;
-	FString Voice;
-	FString Model;
-	FString Host;
+private:
+	UFUNCTION(BlueprintCallable, meta = (BlueprintInternalUseOnly = "true"), Category = "OpenAI")
+	static UOpenAICallSpeech* OpenAICallSpeech(FSpeechSettings speechSettingsInput, FString Host = TEXT("https://yunwu.ai"));
+
+	virtual void Activate() override;
+	void OnResponse(FHttpRequestPtr Request, FHttpResponsePtr Response, bool WasSuccessful);
 };
