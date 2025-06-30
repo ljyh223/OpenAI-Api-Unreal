@@ -31,10 +31,29 @@ UOpenAICallCompletions* UOpenAICallCompletions::OpenAICallCompletions(EOAComplet
 void UOpenAICallCompletions::Activate()
 {
 	FString _apiKey;
+	FString _host = Host;
 	if (UOpenAIUtils::getUseApiKeyFromEnvironmentVars())
+	{
 		_apiKey = UOpenAIUtils::GetEnvironmentVariable(TEXT("OPENAI_API_KEY"));
+		FString EnvHost = UOpenAIUtils::GetEnvironmentVariable(TEXT("OPENAI_API_HOST"));
+		if (!EnvHost.IsEmpty())
+		{
+			_host = EnvHost;
+		}
+	}
 	else
+	{
 		_apiKey = UOpenAIUtils::getApiKey();
+		FString ConfigHost = UOpenAIUtils::getApiHost();
+		if (!ConfigHost.IsEmpty())
+		{
+			_host = ConfigHost;
+		}
+	}
+	if (!Host.IsEmpty())
+	{
+		_host = Host;
+	}
 
 	// checking parameters are valid
 	if (_apiKey.IsEmpty())
@@ -57,55 +76,16 @@ void UOpenAICallCompletions::Activate()
 		Finished.Broadcast({}, TEXT("One or more Stop Sequences has no value"), {}, false);
 	}
 	
-	auto HttpRequest = FHttpModule::Get().CreateRequest();
-	
-	FString apiMethod;
-	switch (engine)
-	{
-	case EOACompletionsEngineType::DAVINCI:
-			apiMethod = "davinci";
-	break;
-	case EOACompletionsEngineType::CURIE:
-			apiMethod = "curie";
-	break;
-	case EOACompletionsEngineType::BABBAGE:
-			apiMethod = "babbage";
-	break;
-	case EOACompletionsEngineType::ADA:
-			apiMethod = "ada";
-	break;
-	case EOACompletionsEngineType::TEXT_DAVINCI_002:
-		apiMethod = "text-davinci-002";
-	break;
-	case EOACompletionsEngineType::TEXT_CURIE_001:
-		apiMethod = "text-curie-001";
-	break;
-	case EOACompletionsEngineType::TEXT_BABBAGE_001:
-		apiMethod = "text-babbage-001";
-		break;
-	case EOACompletionsEngineType::TEXT_ADA_001:
-		apiMethod = "text-ada-001";
-		break;
-	case EOACompletionsEngineType::TEXT_DAVINCI_003:
-		apiMethod = "text-davinci-003";
-		break;
-	}
-
-	// convert parameters to strings
-	FString tempPrompt = settings.startSequence + prompt + settings.injectStartText;
-	FString tempHeader = "Bearer ";
-	tempHeader += _apiKey;
-
-	// set headers
-	FString url = Host.EndsWith("/") ? Host.LeftChop(1) : Host;
-	url += FString::Printf(TEXT("/v1/engines/%s/completions"), *apiMethod);
+	TSharedRef<IHttpRequest, ESPMode::ThreadSafe> HttpRequest = FHttpModule::Get().CreateRequest();
+	FString url = _host.EndsWith("/") ? _host.LeftChop(1) : _host;
+	url += TEXT("/v1/completions");
 	HttpRequest->SetURL(url);
 	HttpRequest->SetHeader(TEXT("Content-Type"), TEXT("application/json"));
-	HttpRequest->SetHeader(TEXT("Authorization"), tempHeader);
+	HttpRequest->SetHeader(TEXT("Authorization"), "Bearer " + _apiKey);
 
 	//build payload
 	TSharedPtr<FJsonObject> _payloadObject = MakeShareable(new FJsonObject());
-	_payloadObject->SetStringField(TEXT("prompt"), tempPrompt);
+	_payloadObject->SetStringField(TEXT("prompt"), settings.startSequence + prompt + settings.injectStartText);
 	_payloadObject->SetNumberField(TEXT("max_tokens"), settings.maxTokens);
 	_payloadObject->SetNumberField(TEXT("temperature"), FMath::Clamp(settings.temperature, 0.0f, 1.0f));
 	_payloadObject->SetNumberField(TEXT("top_p"), FMath::Clamp(settings.topP, 0.0f, 1.0f));

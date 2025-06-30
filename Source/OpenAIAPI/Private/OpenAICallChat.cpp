@@ -27,10 +27,31 @@ UOpenAICallChat* UOpenAICallChat::OpenAICallChat(FChatSettings chatSettingsInput
 void UOpenAICallChat::Activate()
 {
 	FString _apiKey;
+	FString _host = Host;
 	if (UOpenAIUtils::getUseApiKeyFromEnvironmentVars())
+	{
 		_apiKey = UOpenAIUtils::GetEnvironmentVariable(TEXT("OPENAI_API_KEY"));
+		// 支持通过环境变量设置Host
+		FString EnvHost = UOpenAIUtils::GetEnvironmentVariable(TEXT("OPENAI_API_HOST"));
+		if (!EnvHost.IsEmpty())
+		{
+			_host = EnvHost;
+		}
+	}
 	else
+	{
 		_apiKey = UOpenAIUtils::getApiKey();
+		// 支持通过配置设置Host
+		FString ConfigHost = UOpenAIUtils::getApiHost();
+		if (!ConfigHost.IsEmpty())
+		{
+			_host = ConfigHost;
+		}
+	}
+	if (!Host.IsEmpty())
+	{
+		_host = Host;
+	}
 	// checking parameters are valid
 	if (_apiKey.IsEmpty())
 	{
@@ -57,7 +78,7 @@ void UOpenAICallChat::Activate()
 		}
 		FString tempHeader = "Bearer ";
 		tempHeader += _apiKey;
-		FString url = Host.EndsWith("/") ? Host.LeftChop(1) : Host;
+		FString url = _host.EndsWith("/") ? _host.LeftChop(1) : _host;
 		url += TEXT("/v1/chat/completions");
 		HttpRequest->SetURL(url);
 		HttpRequest->SetHeader(TEXT("Content-Type"), TEXT("application/json"));

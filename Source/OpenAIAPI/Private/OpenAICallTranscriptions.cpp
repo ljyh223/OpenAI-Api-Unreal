@@ -30,10 +30,29 @@ UOpenAICallTranscriptions* UOpenAICallTranscriptions::OpenAICallTranscriptions(F
 void UOpenAICallTranscriptions::Activate()
 {
 	FString _apiKey;
+	FString _host = Host;
 	if (UOpenAIUtils::getUseApiKeyFromEnvironmentVars())
+	{
 		_apiKey = UOpenAIUtils::GetEnvironmentVariable(TEXT("OPENAI_API_KEY"));
+		FString EnvHost = UOpenAIUtils::GetEnvironmentVariable(TEXT("OPENAI_API_HOST"));
+		if (!EnvHost.IsEmpty())
+		{
+			_host = EnvHost;
+		}
+	}
 	else
+	{
 		_apiKey = UOpenAIUtils::getApiKey();
+		FString ConfigHost = UOpenAIUtils::getApiHost();
+		if (!ConfigHost.IsEmpty())
+		{
+			_host = ConfigHost;
+		}
+	}
+	if (!Host.IsEmpty())
+	{
+		_host = Host;
+	}
 	// checking parameters are valid
 	if (_apiKey.IsEmpty())
 	{
@@ -46,8 +65,7 @@ void UOpenAICallTranscriptions::Activate()
 	tempHeader += _apiKey;
 	// Create the HTTP request
 	TSharedRef<IHttpRequest, ESPMode::ThreadSafe> HttpRequest = FHttpModule::Get().CreateRequest();
-	// Set the request method, URL, and headers
-	FString url = Host.EndsWith("/") ? Host.LeftChop(1) : Host;
+	FString url = _host.EndsWith("/") ? _host.LeftChop(1) : _host;
 	url += TEXT("/v1/audio/transcriptions");
 	HttpRequest->SetURL(url);
 	HttpRequest->SetVerb("POST");

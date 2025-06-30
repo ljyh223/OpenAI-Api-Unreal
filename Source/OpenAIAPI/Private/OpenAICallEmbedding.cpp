@@ -29,6 +29,31 @@ UOpenAICallEmbedding* UOpenAICallEmbedding::OpenAICallEmbedding(const FEmbedding
 
 void UOpenAICallEmbedding::Activate()
 {
+	FString _apiKey;
+	FString _host = Host;
+	if (UOpenAIUtils::getUseApiKeyFromEnvironmentVars())
+	{
+		_apiKey = UOpenAIUtils::GetEnvironmentVariable(TEXT("OPENAI_API_KEY"));
+		FString EnvHost = UOpenAIUtils::GetEnvironmentVariable(TEXT("OPENAI_API_HOST"));
+		if (!EnvHost.IsEmpty())
+		{
+			_host = EnvHost;
+		}
+	}
+	else
+	{
+		_apiKey = UOpenAIUtils::getApiKey();
+		FString ConfigHost = UOpenAIUtils::getApiHost();
+		if (!ConfigHost.IsEmpty())
+		{
+			_host = ConfigHost;
+		}
+	}
+	if (!Host.IsEmpty())
+	{
+		_host = Host;
+	}
+
 	if (!OpenAIEmbeddingInstance)
 	{
 		OpenAIEmbeddingInstance = UOpenAIEmbedding::CreateEmbeddingInstance();

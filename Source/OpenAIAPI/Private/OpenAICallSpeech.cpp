@@ -22,6 +22,28 @@ UOpenAICallSpeech* UOpenAICallSpeech::OpenAICallSpeech(FSpeechSettings speechSet
 
 void UOpenAICallSpeech::Activate()
 {
+	FString _host = Host;
+	if (UOpenAIUtils::getUseApiKeyFromEnvironmentVars())
+	{
+		FString EnvHost = UOpenAIUtils::GetEnvironmentVariable(TEXT("OPENAI_API_HOST"));
+		if (!EnvHost.IsEmpty())
+		{
+			_host = EnvHost;
+		}
+	}
+	else
+	{
+		FString ConfigHost = UOpenAIUtils::getApiHost();
+		if (!ConfigHost.IsEmpty())
+		{
+			_host = ConfigHost;
+		}
+	}
+	if (!Host.IsEmpty())
+	{
+		_host = Host;
+	}
+
 	// 构建请求体
 	TSharedPtr<FJsonObject> Payload = MakeShareable(new FJsonObject());
 	Payload->SetStringField(TEXT("model"), speechSettings.model);
@@ -34,7 +56,7 @@ void UOpenAICallSpeech::Activate()
 	FJsonSerializer::Serialize(Payload.ToSharedRef(), Writer);
 
 	TSharedRef<IHttpRequest, ESPMode::ThreadSafe> HttpRequest = FHttpModule::Get().CreateRequest();
-	FString url = Host.EndsWith("/") ? Host.LeftChop(1) : Host;
+	FString url = _host.EndsWith("/") ? _host.LeftChop(1) : _host;
 	url += TEXT("/v1/audio/speech");
 	HttpRequest->SetURL(url);
 	HttpRequest->SetVerb(TEXT("POST"));

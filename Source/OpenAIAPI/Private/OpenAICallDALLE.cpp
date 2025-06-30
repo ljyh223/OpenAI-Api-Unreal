@@ -31,11 +31,29 @@ UOpenAICallDALLE* UOpenAICallDALLE::OpenAICallDALLE(EOAImageSize imageSizeInput,
 void UOpenAICallDALLE::Activate()
 {
 	FString _apiKey;
+	FString _host = Host;
 	if (UOpenAIUtils::getUseApiKeyFromEnvironmentVars())
+	{
 		_apiKey = UOpenAIUtils::GetEnvironmentVariable(TEXT("OPENAI_API_KEY"));
+		FString EnvHost = UOpenAIUtils::GetEnvironmentVariable(TEXT("OPENAI_API_HOST"));
+		if (!EnvHost.IsEmpty())
+		{
+			_host = EnvHost;
+		}
+	}
 	else
+	{
 		_apiKey = UOpenAIUtils::getApiKey();
-
+		FString ConfigHost = UOpenAIUtils::getApiHost();
+		if (!ConfigHost.IsEmpty())
+		{
+			_host = ConfigHost;
+		}
+	}
+	if (!Host.IsEmpty())
+	{
+		_host = Host;
+	}
 
 	// checking parameters are valid
 	if (_apiKey.IsEmpty())
@@ -49,32 +67,12 @@ void UOpenAICallDALLE::Activate()
 		Finished.Broadcast({}, TEXT("NumImages must be set to a value between 1 and 10"), false);
 	}
 	
-	auto HttpRequest = FHttpModule::Get().CreateRequest();
-	
-	FString imageResolution;
-	switch (imageSize)
-	{
-	case EOAImageSize::SMALL:
-			imageResolution = "256x256";
-	break;
-	case EOAImageSize::MEDIUM:
-			imageResolution = "512x512";
-	break;
-	case EOAImageSize::LARGE:
-			imageResolution = "1024x1024";
-	break;
-	}
-
-	// convert parameters to strings
-	FString tempHeader = "Bearer ";
-	tempHeader += _apiKey;
-
-	// set headers
-	FString url = Host.EndsWith("/") ? Host.LeftChop(1) : Host;
+	TSharedRef<IHttpRequest, ESPMode::ThreadSafe> HttpRequest = FHttpModule::Get().CreateRequest();
+	FString url = _host.EndsWith("/") ? _host.LeftChop(1) : _host;
 	url += TEXT("/v1/images/generations");
 	HttpRequest->SetURL(url);
 	HttpRequest->SetHeader(TEXT("Content-Type"), TEXT("application/json"));
-	HttpRequest->SetHeader(TEXT("Authorization"), tempHeader);
+	HttpRequest->SetHeader(TEXT("Authorization"), "Bearer " + _apiKey);
 
 	// build payload
 	TSharedPtr<FJsonObject> _payloadObject = MakeShareable(new FJsonObject());
