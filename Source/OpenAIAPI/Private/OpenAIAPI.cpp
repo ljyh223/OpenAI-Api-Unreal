@@ -1,6 +1,7 @@
 // Copyright Epic Games, Inc. All Rights Reserved.
 
 #include "OpenAIAPI.h"
+#include "OpenAICallSpeech.h"
 
 #define LOCTEXT_NAMESPACE "FOpenAIAPIModule"
 
